@@ -1,7 +1,10 @@
-# Development OpenStack environment - different Methods:
+# Development OpenStack environment
 
-my_devstack.sh - Devstack all-in-one installation via shell script
+Different Methods:
+-----------
 
-Vagrant1 - Devstack all-in-one installation with Vagrant
+* my_devstack.sh - Devstack all-in-one installation via shell script
 
-ansible_openstack - OpenStack all-in-one installation with ansible project
+* Vagrant1 - Devstack all-in-one installation with Vagrant
+
+* ansible_openstack - OpenStack all-in-one installation with ansible project
