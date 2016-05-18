@@ -24,9 +24,6 @@ _added_lines=''
 # Proxy to use for the installation
 _proxy=''
 
-# Default user to install devstack
-_caller_user=''
-
 # ============================= Processes devstack installation options ============================
 function PrintHelp {
     echo " "
@@ -70,7 +67,7 @@ while [[ ${1} ]]; do
       ;;
     --branch)
       # Installs a specific branch
-      if [ -z "${2}" ]; then
+      if [[ -z "${2}" || "${2}" == --* ]]; then
         PrintError "Missing branch name."
       else
         _branch="${2}"
@@ -115,7 +112,7 @@ EOM
       ;;
     --password)
       # Use specific password for common objetcs
-      if [ -z "${2}" ]; then
+      if [[ -z "${2}" || "${2}" == --* ]]; then
         PrintError "Missing password."
       else
         _password="${2}"
@@ -124,10 +121,15 @@ EOM
       ;;
     --proxy)
       # Install devstack with server behind proxy
-      if [ -z "${2}" ]; then
+      if [[ -z "${2}" || "${2}" == --* ]]; then
         PrintError "Missing proxy. Expected: http://<server>:<port>"
       else
         _original_proxy="${2}"
+        sudo bash -c "echo 'Acquire::http::Proxy \"${2}\";' >>  /etc/apt/apt.conf"
+        sudo bash -c " echo 'Acquire::https::Proxy \"${2}\";' >>  /etc/apt/apt.conf"
+        npx="127.0.0.1,localhost,10.0.0.0/8,192.168.0.0/16"
+        _proxy="http_proxy=${2} https_proxy=${2} no_proxy=${npx}"
+        _proxy="$_proxy HTTP_PROXY=${2} HTTPS_PROXY=${2} NO_PROXY=${npx}"
       fi
       shift
       ;;
@@ -160,20 +162,12 @@ done
 # ====================================
 export STACK_USER=$(whoami)
 
-# Use proxy if provided
-if [[ ! -z "${_original_proxy}" ]]; then
-  sudo bash -c "echo 'Acquire::http::Proxy \"${_original_proxy}\";' >>  /etc/apt/apt.conf"
-  sudo bash -c " echo 'Acquire::https::Proxy \"${_original_proxy}\";' >>  /etc/apt/apt.conf"
-  _proxy="http_proxy=$_original_proxy https_proxy=$_original_proxy no_proxy=127.0.0.1,localhost"
-  _proxy="$_proxy HTTP_PROXY=$_original_proxy HTTPS_PROXY=$_original_proxy NO_PROXY=127.0.0.1,localhost"
-fi
-
 # Install software pre-requisites
 sudo -H sh -c "eval $_proxy apt-get update"
 #   Install git
-sudo -H sh -c "eval $_proxy apt-get -y --force-yes install git"
+sudo -H sh -c "eval $_proxy apt-get -y install git"
 #   Install pip
-sudo -H sh -c "eval $_proxy apt-get -y --force-yes install python-pip"
+sudo -H sh -c "eval $_proxy apt-get -y install python-pip"
 
 #=================================================
 # BASIC DEVSTACK
@@ -219,6 +213,6 @@ eval $_proxy ./stack.sh
 # Clean up _proxy from apt if added
 if [[ ! -z "${_original_proxy}" ]]; then
   scaped_str=$(echo $_original_proxy | sed -s 's/[\/&]/\\&/g')
-  sudo sed -i "/$scaped_str/c\\" /etc/apt/apt.conf
+  sudo -H sh -c "sed -i '/$scaped_str/c\\' /etc/apt/apt.conf"
 fi
 
