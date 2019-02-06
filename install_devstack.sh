@@ -1,22 +1,21 @@
 #!/bin/bash
 # ==========================================================
-# Script installs: devstaick
-# Assume Ubuntu 14.04 or higher
+# Script installs: devstack
+# Assume Ubuntu Xenial
 # See help to display all the options.
-# Devstack configuration:: MariaDB, RabbitMQ, master branch, and reset default passwords to secure123.
+# Devstack configuration:: MariaDB, RabbitMQ, stable/pike branch, and reset default passwords to secrete9.
 # =========================================================
 
 # Uncomment the following line to debug
-# set -o xtrace
+ set -o xtrace
 
 #=================================================
 # GLOBAL VARIABLES DEFINITION
 #=================================================
 # release branch
-# branch='stable/liberty'
-_branch="master"
+_branch='stable/pike'
 # openstack component password
-_password='secure123'
+_password='secrete9'
 
 # Additional configurations
 _added_lines=''
@@ -30,13 +29,12 @@ function PrintHelp {
     echo "Script installs devstack - different configurations available."
     echo " "
     echo "Usage:"
-    echo "     ./install_devstack [--basic|--branch <branch>|--ceph|--heat|--neutron|--password <pwd>|--swift|--proxy <http://<proxy-server>:<port>|--help]"
+    echo "    ./$(basename "$0") [--basic|--branch <branch>|--ceph|--heat|--password <pwd>|--swift|--proxy <http://<proxy-server>:<port>|--help]"
     echo " "
     echo "     --basic        Installs devstack with minimal configuration."
     echo "     --branch       Use given branch for installation e.g stable/liberty."
     echo "     --ceph         Configure devstack with ceph cluster."
     echo "     --heat         Add heat project."
-    echo "     --neutron      Configures neutron instead of nova-net."
     echo "     --password     Use given password for devstack DBs,Queue, etc."
     echo "     --proxy        Uses the given proxy for the full installation"
     echo "     --repo         (TobeImplemented)Installs devstack packages from given repo(s)."
@@ -49,7 +47,7 @@ function PrintHelp {
 function PrintError {
     echo "***************************" >&2
     echo "* Error: $1" >&2
-    echo "  See ./install_devstack --help" >&2
+    echo "  See ./$(basename "$0") --help" >&2
     echo "***************************" >&2
     exit 1
 }
@@ -92,21 +90,6 @@ enable_service h-eng
 enable_service h-api
 enable_service h-api-cfn
 enable_service h-api-cw
-EOM
-      _added_lines="$_added_lines"$'\n'"$lines"
-      ;;
-   --neutron)
-      read -r -d '' lines << EOM
-#
-# NEUTRON
-#  -------
-disable_service n-net
-enable_service q-svc
-enable_service q-agt
-enable_service q-dhcp
-enable_service q-l3
-enable_service q-meta
-enable_service neutron
 EOM
       _added_lines="$_added_lines"$'\n'"$lines"
       ;;
@@ -155,7 +138,11 @@ EOM
   shift
 done
 
-# ============================================================================================
+# ======= START INSTALLATION =================================================
+# Ensure script is run as NON ROOT
+if [ "$EUID" -eq "0" ]; then
+    PrintError "This script must be run as NON root."
+fi
 
 # ====================================
 # Begin Instalation and Configuration:
@@ -173,8 +160,9 @@ sudo -H sh -c "eval $_proxy apt-get -y install python-pip"
 # BASIC DEVSTACK
 #=================================================
 # Clone devstack project with correct branch
-eval $_proxy git clone https://git.openstack.org/openstack-dev/devstack -b $_branch devstack
-cd devstack
+eval $_proxy git clone https://git.openstack.org/openstack-dev/devstack \
+    -b $_branch devstack
+pushd devstack
 
 # Create local.conf file
 cp ./samples/local.conf local.conf
@@ -183,9 +171,11 @@ cp ./samples/local.conf local.conf
 # Pre-set the passwords to prevent interactive prompts
 read -r -d '' password_lines << EOM
 ADMIN_PASSWORD="${_password}"
-MYSQL_PASSWORD="${_password}"
+DATABASE_PASSWORD="${_password}"
 RABBIT_PASSWORD="${_password}"
 SERVICE_PASSWORD="${_password}"
+HOST_IP=$(ip route get 8.8.8.8 | awk '{ print $NF; exit }')
+USE_PYTHON3=True
 EOM
 
 sed -i '/PASSWORD/c\' ./local.conf
@@ -199,9 +189,12 @@ if [[ ! -z "$_added_lines" ]]; then
 fi
 
 # Enable tempest if not already enabled
-sed -i '/tempest/c\' ./local.conf
-echo "# Install the tempest test suite" >> ./local.conf
-echo "enable_service tempest" >> ./local.conf
+#sed -i '/tempest/c\' ./local.conf
+#echo "# Install the tempest test suite" >> ./local.conf
+#echo "enable_service tempest" >> ./local.conf
+
+# Enable horizon
+echo "enable_service horizon">> ./local.conf
 
 # Configure git to use https instead of git
 git config --global url."https://".insteadOf git://
