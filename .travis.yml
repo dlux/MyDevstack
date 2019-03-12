@@ -1,0 +1,6 @@
+language: python
+install:
+  - pip install bashate
+script:
+  - bashate install_devstack.sh
+  - bashate install_devstack_rocky_bionic.sh
