@@ -1,5 +1,8 @@
 # Development OpenStack environment
 
+[![Build Status](https://travis-ci.com/dlux/MyDevstack.svg?branch=master)](https://travis-ci.com/dlux/MyDevstack)
+
+
 Different Methods:
 ------------------
 
@@ -7,7 +10,6 @@ Different Methods:
 
 * Vagrant - Devstack all-in-one installation with Vagrant
 
-* ansible_openstack - OpenStack all-in-one installation with ansible project
 
 Notes:
 ------

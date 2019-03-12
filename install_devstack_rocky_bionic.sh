@@ -9,7 +9,7 @@
 # ================================================================
 
 # Uncomment the following line to debug
- set -o xtrace
+set -o xtrace
 
 #=================================================
 # GLOBAL VARIABLES DEFINITION
@@ -58,81 +58,78 @@ function PrintError {
 
 # If no parameter passed print help
 if [ -z "${1}" ]; then
-   PrintHelp
+    PrintHelp
 fi
 
 while [[ ${1} ]]; do
-  case "${1}" in
+    case "${1}" in
     --basic)
-      # minimal installation hence no extra stuff
-      shift
-      ;;
+        # minimal installation hence no extra stuff
+        shift
+        ;;
     --branch)
-      # Installs devstack from an specific branch
-      if [[ -z "${2}" || "${2}" == --* ]]; then
-        PrintError "Missing branch name."
-      else
-        _branch="${2}"
-      fi
-      shift
-      ;;
+        # Installs devstack from an specific branch
+        if [[ -z "${2}" || "${2}" == --* ]]; then
+            PrintError "Missing branch name."
+        else
+            _branch="${2}"
+        fi
+        shift
+        ;;
     --ceph)
-      read -r -d '' lines << EOM
-#
+        read -r -d '' lines << EOM
+# -----
 # CEPH
-#  -------
+# -----
 enable_plugin plugin-ceph https://github.com/openstack/devstack-plugin-ceph
 ENABLE_CEPH_RGW=True
 EOM
-      _added_lines="$_added_lines"$'\n'"$lines"
-      ;;
+        _added_lines="$_added_lines"$'\n'"$lines"
+        ;;
     --heat)
-      read -r -d '' lines << EOM
-#
+        read -r -d '' lines << EOM
+# ----
 # HEAT
-#
-enable_service h-eng
-enable_service h-api
-enable_service h-api-cfn
-enable_service h-api-cw
+# ----
+enable_service h-eng  h-api h-api-cfn h-api-cw
 EOM
-      _added_lines="$_added_lines"$'\n'"$lines"
-      ;;
+        _added_lines="$_added_lines"$'\n'"$lines"
+        ;;
     --ironic)
-      read -r -d '' lines << EOM
-#
+        read -r -d '' lines << EOM
+# ------
 # Ironic
-#
+# ------
 enable_plugin ironic https://git.openstack.org/openstack/ironic
 enable_plugin ironic-ui https://github.com/openstack/ironic-ui
 EOM
-      _added_lines="$_added_lines"$'\n'"$lines"
-      ;;
+        _added_lines="$_added_lines"$'\n'"$lines"
+        ;;
     --password)
-      # Use specific password for common objetcs
-      if [[ -z "${2}" || "${2}" == --* ]]; then
-        PrintError "Missing password."
-      else
-        _password="${2}"
-      fi
-      shift
-      ;;
+        # Use specific password for common objetcs
+        if [[ -z "${2}" || "${2}" == --* ]]; then
+            PrintError "Missing password."
+        else
+            _password="${2}"
+        fi
+        shift
+        ;;
     --swift)
-      read -r -d '' lines << EOM
-#
+        read -r -d '' lines << EOM
+# -------
 # SWIFT
-#  -------
+# -------
 enable_service s-proxy s-object s-container s-account
 EOM
-      _added_lines="$_added_lines"$'\n'"$lines"
-      ;;
+        _added_lines="$_added_lines"$'\n'"$lines"
+        ;;
     --help|-h)
-      PrintHelp
-      ;;
+        PrintHelp
+        ;;
     *)
-      PrintError "Invalid Argument: $1."
-  esac
-  shift
+        PrintError "Invalid Argument: $1."
+    esac
+    shift
 done
 
 # ======= START INSTALLATION =================================================
